@@ -3,7 +3,7 @@
 # Created: 2026-02-06
 
 import tkinter as tk
-from app.models import GameState
+from app.app_models import GameState
 from app.ui_screen import WelcomeScreen, PlacementScreen, BattleScreen
 
 

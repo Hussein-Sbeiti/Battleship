@@ -6,7 +6,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from game.game_board import Board
+from game.board import Board
 
 
 @dataclass

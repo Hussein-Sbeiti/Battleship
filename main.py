@@ -1,17 +1,18 @@
 '''
-battleship/
+Battleship/
   main.py
-  ui/
-    app.py
-    screens.py
-    widgets.py
-  game/
+  app/
+    __init__.py
+    ui_app.py
+    ui_screen.py
     models.py
-    board.py
+  game/
+    __init__.py
+    game_board.py
+    game_models.py
     ships.py
-    rules.py
-  utils/
-    coords.py
+    rules.py        
+    coords.py       
 '''
 
 # main.py
@@ -23,7 +24,6 @@ battleship/
 # Created: 2026-02-06
 
 from app.ui_app import App
-
 
 def main():
     """

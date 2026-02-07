@@ -4,19 +4,23 @@
 
 import tkinter as tk
 from tkinter import ttk, messagebox
+from game.rules import fire_shot, ships_remaining, UNKNOWN, MISS, HIT
 
 MIN_SHIPS = 1
 MAX_SHIPS = 5
 GRID_SIZE = 10
 
-FADED_BG = "#e8e8e8"
 ACTIVE_BG = "#ffffff"
-SHIP_BG = "#1f77b4"
+COVER_BG = "#2b2b2b"
 
-P1_SHIP_BG = "#2ecc71"   # green
-P2_SHIP_BG = "#e67e22"   # orange
-HIDDEN_BG  = "#bdbdbd"   # hidden ship when it's not your turn
-COVER_BG = "#2b2b2b"   # matches your dark theme
+P1_SHIP_BG = "#2ecc71"
+P2_SHIP_BG = "#e67e22"
+
+MISS_BG = "#95a5a6"
+HIT_BG = "#c0392b"
+
+HIGHLIGHT_BG = "#f1c40f"
+TURN_DELAY_MS = 3000
 
 
 class WelcomeScreen(tk.Frame):
@@ -176,8 +180,14 @@ class PlacementScreen(tk.Frame):
         if not self.can_place(board, row, col, length, orient):
             messagebox.showerror("Invalid placement", "That ship doesn't fit there or overlaps another ship.")
             return
+        
+        coords = self.place_ship(board, row, col, length, orient)
 
-        self.place_ship(board, row, col, length, orient)
+        if player == 1:
+            s.p1_ships.append(coords)
+        else:
+            s.p2_ships.append(coords)
+
         s.placing_ship_len += 1
         self.refresh_ui()
 
@@ -195,12 +205,16 @@ class PlacementScreen(tk.Frame):
         return all(board[r][c] == 0 for r, c in cells)
 
     def place_ship(self, board, row, col, length, orient):
+        coords = []
         if orient == "H":
             for i in range(length):
                 board[row][col + i] = 1
+                coords.append((row, col + i))
         else:
             for i in range(length):
                 board[row + i][col] = 1
+                coords.append((row + i, col))
+        return coords
 
     def on_ready(self):
         s = self.app.state
@@ -271,20 +285,270 @@ class PlacementScreen(tk.Frame):
                     cells[r][c].unbind("<Button-1>")
 
 
+from game.rules import fire_shot, UNKNOWN, MISS, HIT  # put this near top imports
+
+
 class BattleScreen(tk.Frame):
-    """Placeholder battle screen. Next step is turn-based firing."""
+    """
+    Battle Phase:
+    - Left: current player's own board (ships visible) + incoming marks (what opponent did to you)
+    - Right: opponent board hidden except your shots (hit/miss shown)
+    - Click selects a target cell (highlight only)
+    - FIRE confirms the shot
+    - Show big HIT/MISS/SINK, then switch turns after TURN_DELAY_MS
+    - Scoreboard shows both players stats and ships remaining
+    """
 
     def __init__(self, parent, app):
         super().__init__(parent)
         self.app = app
 
-        outer = tk.Frame(self)
-        outer.pack(fill="both", expand=True)
+        self.selected = None        # (row, col) selection on target board
+        self.input_locked = False   # lock input during result delay
 
-        inner = tk.Frame(outer)
-        inner.place(relx=0.5, rely=0.5, anchor="center")
+        root = tk.Frame(self)
+        root.pack(fill="both", expand=True, padx=30, pady=20)
 
-        tk.Label(inner, text="Battle Phase", font=("Arial", 22, "bold")).pack(pady=(0, 10))
-        tk.Label(inner, text="Placement complete.\nNext: implement turn-based firing.", font=("Arial", 12)).pack(pady=(0, 16))
+        header = tk.Frame(root)
+        header.pack(fill="x", pady=(0, 12))
 
-        tk.Button(inner, text="Back to Welcome", command=lambda: app.show_screen("WelcomeScreen")).pack()
+        self.turn_lbl = tk.Label(header, text="", font=("Arial", 22, "bold"))
+        self.turn_lbl.pack()
+
+        self.result_lbl = tk.Label(header, text="", font=("Arial", 32, "bold"))
+        self.result_lbl.pack(pady=(6, 0))
+
+        controls = tk.Frame(root)
+        controls.pack(fill="x", pady=(0, 12))
+
+        self.fire_btn = tk.Button(
+            controls,
+            text="FIRE",
+            font=("Arial", 18, "bold"),
+            width=10,
+            command=self.on_fire_pressed,
+        )
+        self.fire_btn.pack()
+
+        boards = tk.Frame(root)
+        boards.pack(fill="both", expand=True)
+
+        # Left panel: Own board
+        left = tk.Frame(boards)
+        left.pack(side="left", expand=True, padx=(0, 25))
+        self.left_title = tk.Label(left, text="Your Board", font=("Arial", 14, "bold"))
+        self.left_title.pack(pady=(0, 8))
+        self.own_grid = tk.Frame(left)
+        self.own_grid.pack()
+
+        # Right panel: Target board
+        right = tk.Frame(boards)
+        right.pack(side="left", expand=True, padx=(25, 0))
+        self.right_title = tk.Label(right, text="Opponent Board", font=("Arial", 14, "bold"))
+        self.right_title.pack(pady=(0, 8))
+        self.target_grid = tk.Frame(right)
+        self.target_grid.pack()
+
+        # Cell matrices
+        self.own_cells = [[None] * GRID_SIZE for _ in range(GRID_SIZE)]
+        self.target_cells = [[None] * GRID_SIZE for _ in range(GRID_SIZE)]
+
+        self._make_grid(self.own_grid, self.own_cells, clickable=False)
+        self._make_grid(self.target_grid, self.target_cells, clickable=True)
+
+        # Scoreboard
+        self.score_lbl = tk.Label(root, text="", font=("Arial", 14))
+        self.score_lbl.pack(pady=(14, 0))
+
+    def tkraise(self, aboveThis=None):
+        self.refresh_ui()
+        super().tkraise(aboveThis)
+
+    def _make_grid(self, frame, cells, clickable: bool):
+        for r in range(GRID_SIZE):
+            for c in range(GRID_SIZE):
+                cell = tk.Label(
+                    frame,
+                    text="",
+                    width=6,
+                    height=3,
+                    bg=ACTIVE_BG,
+                    relief="solid",
+                    borderwidth=1,
+                    font=("Arial", 16, "bold"),
+                )
+                cell.grid(row=r, column=c, padx=1, pady=1)
+
+                if clickable:
+                    def handler(event, rr=r, cc=c):
+                        self.on_select(rr, cc)
+
+                    cell._click_handler = handler
+                    cell.bind("<Button-1>", cell._click_handler)
+
+                cells[r][c] = cell
+
+    def on_select(self, row: int, col: int):
+        if self.input_locked:
+            return
+        self.selected = (row, col)
+        self.refresh_ui()
+
+    def on_fire_pressed(self):
+        if self.input_locked:
+            return
+        if self.selected is None:
+            self.result_lbl.config(text="SELECT A CELL")
+            return
+
+        s = self.app.state
+        row, col = self.selected
+        turn = s.current_turn
+
+        # Pick boards by attacker turn
+        if turn == 1:
+            attacker_shots = s.p1_shots
+            defender_incoming = s.p2_incoming
+            defender_ships = s.p2_ships
+            defender_hits = s.p2_hits
+        else:
+            attacker_shots = s.p2_shots
+            defender_incoming = s.p1_incoming
+            defender_ships = s.p1_ships
+            defender_hits = s.p1_hits
+
+        result = fire_shot(attacker_shots, defender_incoming, defender_ships, defender_hits, row, col)
+
+        if result == "already":
+            self.result_lbl.config(text="ALREADY SHOT")
+            return
+
+        # Show result big
+        self.result_lbl.config(text=result.upper())
+
+        # Lock input + disable fire during delay
+        self.input_locked = True
+        self.fire_btn.config(state="disabled")
+
+        # Clear selection so it doesn't carry over
+        self.selected = None
+
+        # Switch turns after delay
+        self.after(TURN_DELAY_MS, self._switch_turn)
+
+        # Refresh now so you see the shot marks immediately
+        self.refresh_ui()
+
+    def _switch_turn(self):
+        s = self.app.state
+        s.current_turn = 2 if s.current_turn == 1 else 1
+
+        self.result_lbl.config(text="")
+        self.input_locked = False
+        self.fire_btn.config(state="normal")
+
+        self.refresh_ui()
+
+    def refresh_ui(self):
+        s = self.app.state
+        turn = s.current_turn
+        self.turn_lbl.config(text=f"Player {turn}'s turn")
+
+        # Define what the current player sees
+        if turn == 1:
+            own_ship_board = s.p1_board
+            own_incoming = s.p1_incoming
+            own_color = P1_SHIP_BG
+
+            my_shots = s.p1_shots
+
+            p1_stats = self._stats(s.p1_shots, s.p1_ships, s.p1_hits)
+            p2_stats = self._stats(s.p2_shots, s.p2_ships, s.p2_hits)
+        else:
+            own_ship_board = s.p2_board
+            own_incoming = s.p2_incoming
+            own_color = P2_SHIP_BG
+
+            my_shots = s.p2_shots
+
+            p1_stats = self._stats(s.p1_shots, s.p1_ships, s.p1_hits)
+            p2_stats = self._stats(s.p2_shots, s.p2_ships, s.p2_hits)
+
+        # Render own board (ships visible + incoming marks)
+        self._render_own_board(self.own_cells, own_ship_board, own_incoming, own_color)
+
+        # Render target board (opponent hidden except my shots)
+        self._render_target_board(self.target_cells, my_shots)
+
+        # Scoreboard (both players)
+        self.score_lbl.config(
+            text=(
+                f"P1 → Shots: {p1_stats['shots']} | Hits: {p1_stats['hits']} | Misses: {p1_stats['misses']} | Ships: {p1_stats['ships']}\n"
+                f"P2 → Shots: {p2_stats['shots']} | Hits: {p2_stats['hits']} | Misses: {p2_stats['misses']} | Ships: {p2_stats['ships']}"
+            )
+        )
+
+        # Highlight selected cell on target board if valid
+        if self.selected is not None:
+            r, c = self.selected
+            if my_shots[r][c] == UNKNOWN and not self.input_locked:
+                self.target_cells[r][c].config(bg=HIGHLIGHT_BG)
+
+        # Disable selection clicks if locked
+        if self.input_locked:
+            # prevent selecting during delay
+            for r in range(GRID_SIZE):
+                for c in range(GRID_SIZE):
+                    self.target_cells[r][c].unbind("<Button-1>")
+        else:
+            # restore bindings
+            for r in range(GRID_SIZE):
+                for c in range(GRID_SIZE):
+                    self.target_cells[r][c].bind("<Button-1>", self.target_cells[r][c]._click_handler)
+
+    def _render_own_board(self, cells, ship_board, incoming_board, ship_color: str):
+        """
+        Own view:
+        - ships are colored
+        - incoming MISS -> gray 'O'
+        - incoming HIT  -> red  'X'
+        """
+        for r in range(GRID_SIZE):
+            for c in range(GRID_SIZE):
+                # base (ship visible)
+                if ship_board[r][c] == 1:
+                    cells[r][c].config(bg=ship_color, fg="white", text="")
+                else:
+                    cells[r][c].config(bg=ACTIVE_BG, fg="black", text="")
+
+                # overlay incoming marks
+                v = incoming_board[r][c]
+                if v == MISS:
+                    cells[r][c].config(bg=MISS_BG, fg="black", text="O")
+                elif v == HIT:
+                    cells[r][c].config(bg=HIT_BG, fg="white", text="X")
+
+    def _render_target_board(self, cells, shots_board):
+        """
+        Target view:
+        - opponent ships hidden (white)
+        - your shots show:
+          MISS -> gray 'O'
+          HIT  -> red  'X'
+        """
+        for r in range(GRID_SIZE):
+            for c in range(GRID_SIZE):
+                v = shots_board[r][c]
+                if v == UNKNOWN:
+                    cells[r][c].config(bg=ACTIVE_BG, fg="black", text="")
+                elif v == MISS:
+                    cells[r][c].config(bg=MISS_BG, fg="black", text="O")
+                else:
+                    cells[r][c].config(bg=HIT_BG, fg="white", text="X")
+
+    def _stats(self, shots_board, ships_list, hits_set):
+        hits = sum(1 for r in range(GRID_SIZE) for c in range(GRID_SIZE) if shots_board[r][c] == HIT)
+        misses = sum(1 for r in range(GRID_SIZE) for c in range(GRID_SIZE) if shots_board[r][c] == MISS)
+        shots = hits + misses
+        ships_left = ships_remaining(ships_list, hits_set)
+        return {"shots": shots, "hits": hits, "misses": misses, "ships": ships_left}
