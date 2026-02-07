@@ -1,0 +1,15 @@
+'''
+battleship/
+  main.py
+  ui/
+    app.py
+    screens.py
+    widgets.py
+  game/
+    models.py
+    board.py
+    ships.py
+    rules.py
+  utils/
+    coords.py
+'''
