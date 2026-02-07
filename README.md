@@ -1,95 +1,161 @@
-# Battleship (Python)
+# Battleship (Python / Tkinter)
 
-A two-player Battleship game implemented in Python using a graphical interface.  
-The game follows the classic Battleship rules with configurable ship counts and turn-based gameplay.
-
----
-
-## Project Overview
-
-This project is a Python implementation of the Battleship board game.  
-Players place ships on a 10×10 grid and take turns firing shots at the opponent’s board.  
-The first player to sink all opposing ships wins.
-
-The game is built using **Tkinter** for the user interface and is structured into logical components to separate UI and game logic.
+A two-player Battleship game built in Python using Tkinter.  
+This project follows a multi-screen, turn-based design with hidden boards, ship placement, and full battle logic.
 
 ---
 
-## Features (Current & Planned)
+## 🎮 Game Overview
 
-### Implemented
-- Graphical welcome screen
-- Ship count selection (1–5 ships)
-- Automatic ship sizing:
-  - 1 ship → 1×1
-  - 2 ships → 1×1, 1×2
-  - 3 ships → 1×1, 1×2, 1×3
-  - …
-- Shared configuration for both players
-- Git version control with GitHub integration
+Battleship is a classic strategy game where two players place ships on a 10×10 grid and take turns firing shots at the opponent’s board.  
+The goal is to sink all of the opponent’s ships first.
 
-### Planned
-- Ship placement screen (10×10 grid)
-- Turn-based firing system
-- Hit / miss / sunk detection
-- Separate tracking and ship boards per player
-- Win screen with replay option
+This implementation focuses on:
+- Clear turn-based gameplay
+- Fair hidden information
+- Visual feedback for hits, misses, and sunk ships
+- Clean code structure and extensibility
 
 ---
 
-## Game Rules
-
-- Board size: **10 × 10**
-- Number of ships: **1–5**
-- Ships are placed horizontally or vertically
-- Ships may not overlap
-- Players take turns firing one shot at a time
-- A hit is recorded if a ship occupies the target square
-- A ship is sunk when all its squares are hit
-- The game ends when one player sinks all opponent ships
-
----
-
-## Project Structure
-
-```text
+## 🧱 Project Structure
+```Text
 Battleship/
-├── main.py        # Program entry point
-├── models.py      # Game state and shared data
-├── ui_app.py      # Main application window and screen manager
-├── ui_screen.py   # UI screens (welcome, placement, battle, win)
-├── README.md      # Project documentation
-└── .gitignore     # Ignored files and folders
+│
+├── main.py                # Program entry point
+│
+├── app/
+│   ├── init.py
+│   ├── ui_app.py          # Main Tkinter app + screen manager
+│   └── ui_screen.py       # All UI screens (welcome, placement, battle)
+│
+├── game/
+│   ├── board.py           # Board-related helpers (placement validation)
+│   ├── game_models.py     # Game data structures
+│   ├── rules.py           # Game rules (fire, hit, miss, sink, win)
+│   └── ships.py           # Ship definitions and helpers
+│
+├── README.md              # Project documentation
+└── .gitignore
 ```
+---
 
+## 🖥️ Screens & Flow
 
-### File Responsibilities
-
-- **main.py**  
-  Starts the application.
-
-- **models.py**  
-  Stores shared game state (e.g., number of ships, player data).
-
-- **ui_app.py**  
-  Manages the main Tkinter window and screen transitions.
-
-- **ui_screen.py**  
-  Contains all UI screens and user interaction logic.
+### 1️⃣ Welcome Screen
+- Player selects number of ships (1–5)
+- Ship sizes are automatically:
+  - 1 → 1×1
+  - 2 → 1×1, 1×2
+  - ...
+  - 5 → 1×1 … 1×5
 
 ---
 
-## Requirements
-
-- Python 3.8+
-- Tkinter (included with standard Python installs)
+### 2️⃣ Placement Phase
+- Player 1 places ships first, then Player 2
+- Ships can be placed horizontally or vertically
+- Ships can be **removed and repositioned** by clicking them
+- Only the active player’s board is visible
+- Opponent board is hidden/disabled
+- Must place all ships before continuing
 
 ---
 
-## How to Run
+### 3️⃣ Battle Phase
+- Both boards are visible at all times
+- Active player:
+  - Sees their own ships + incoming shots
+  - Sees opponent board hidden except for their shots
+- Gameplay flow:
+  1. Select a target cell
+  2. Press **FIRE**
+  3. Result shown: **HIT / MISS / SINK**
+  4. After a short delay, turn switches
 
-Clone the repository:
-   ```bash
-   git clone https://github.com/Hussein-Sbeiti/Battleship.git
-   cd Battleship
-   python3 main.py
+#### Visual Indicators
+- **X (red)** → hit
+- **O (gray)** → miss
+- Ships shown in:
+  - Green (Player 1)
+  - Orange (Player 2)
+
+---
+
+### 4️⃣ Scoreboard
+Displayed below the boards:
+
+P1 → Shots | Hits | Misses | Ships Remaining
+P2 → Shots | Hits | Misses | Ships Remaining
+
+---
+
+### 5️⃣ Win Condition
+- When all ships of one player are sunk:
+  - Winner is announced
+  - Game resets back to the welcome screen
+
+---
+
+## ⚙️ How to Run
+
+```bash
+python3 main.py
+
+Requirements:
+	•	Python 3.x
+	•	Tkinter (included with most Python installations)
+
+⸻
+
+✅ Completed Features
+	•	Multi-screen Tkinter UI
+	•	10×10 grids
+	•	Ship placement with undo
+	•	Hidden information between players
+	•	Turn-based firing with FIRE button
+	•	Hit / Miss / Sink logic
+	•	Scoreboard tracking
+	•	Win detection and restart
+	•	Git-based project structure
+
+⸻
+
+🔧 TODO / Remaining Improvements
+
+These items are planned to fully match the project requirements and polish the game:
+	•	Add row/column labels (A–J, 1–10) to grids
+	•	Display per-ship hit counters (e.g. 2/3 hits)
+	•	Add a dedicated Win Screen with:
+	•	Play Again
+	•	Exit
+	•	Optional: sound effects for hit/miss/sink
+	•	Optional: keyboard input for firing (e.g. “B7”)
+	•	UI polish and animations
+	•	Code cleanup & documentation pass
+
+⸻
+
+📌 Notes
+
+This project was built incrementally with a strong focus on:
+	•	Readability
+	•	Logical game flow
+	•	Separation of UI and game logic
+
+Future improvements can be added without major refactoring.
+
+⸻
+
+---
+
+## Next step
+After this:
+1. Save the README
+2. Commit and push
+
+```bash
+git add README.md
+git commit -m "Update README with current features and remaining TODOs"
+git push
+
