@@ -52,14 +52,17 @@ The game is built using **Tkinter** for the user interface and is structured int
 
 ## Project Structure
 
+## Project Structure
+
+```text
 Battleship/
-│
-├── main.py # Program entry point
-├── models.py # Game state and shared data
-├── ui_app.py # Main application window and screen manager
-├── ui_screen.py # UI screens (welcome, placement, battle, win)
-├── README.md # Project documentation
-└── .gitignore # Ignored files and folders
+├── main.py        # Program entry point
+├── models.py      # Game state and shared data
+├── ui_app.py      # Main application window and screen manager
+├── ui_screen.py   # UI screens (welcome, placement, battle, win)
+├── README.md      # Project documentation
+└── .gitignore     # Ignored files and folders
+
 
 
 ### File Responsibilities
