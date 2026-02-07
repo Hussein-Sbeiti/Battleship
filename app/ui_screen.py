@@ -357,7 +357,7 @@ class BattleScreen(tk.Frame):
         self._make_grid(self.target_grid, self.target_cells, clickable=True)
 
         # Scoreboard
-        self.score_lbl = tk.Label(root, text="", font=("Arial", 14))
+        self.score_lbl = tk.Label(root, text="", font=("Arial", 18, "bold"))
         self.score_lbl.pack(pady=(14, 0))
 
     def tkraise(self, aboveThis=None):
@@ -425,6 +425,30 @@ class BattleScreen(tk.Frame):
 
         # Show result big
         self.result_lbl.config(text=result.upper())
+        
+        # ✅ Win check (after a valid shot)
+        if turn == 1:
+            defender_ships = s.p2_ships
+            defender_hits = s.p2_hits
+            winner = 1
+        else:
+            defender_ships = s.p1_ships
+            defender_hits = s.p1_hits
+            winner = 2
+
+        if ships_remaining(defender_ships, defender_hits) == 0:
+            self.result_lbl.config(text=f"PLAYER {winner} WINS!")
+            self.input_locked = True
+            self.fire_btn.config(state="disabled")
+
+            # restart back to welcome after short pause
+            def restart():
+                s.reset_for_new_game()
+                s.num_ships = None
+                self.app.show_screen("WelcomeScreen")
+
+            self.after(2500, restart)
+            return
 
         # Lock input + disable fire during delay
         self.input_locked = True
