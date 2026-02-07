@@ -153,6 +153,7 @@ Future improvements can be added without major refactoring.
 After this:
 1. Save the README
 2. Commit and push
+3. Add more comments
 
 ```bash
 git add README.md
