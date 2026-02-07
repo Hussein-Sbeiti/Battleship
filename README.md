@@ -52,8 +52,6 @@ The game is built using **Tkinter** for the user interface and is structured int
 
 ## Project Structure
 
-## Project Structure
-
 ```text
 Battleship/
 ├── main.py        # Program entry point
@@ -62,7 +60,7 @@ Battleship/
 ├── ui_screen.py   # UI screens (welcome, placement, battle, win)
 ├── README.md      # Project documentation
 └── .gitignore     # Ignored files and folders
-
+```
 
 
 ### File Responsibilities
