@@ -166,29 +166,41 @@ class PlacementScreen(tk.Frame):
     def on_cell_click(self, player: int, row: int, col: int):
         s = self.app.state
 
-        # Ignore clicks when it's not that player's turn
         if player != s.placing_player:
             return
-        
-        if s.num_ships is None or s.placing_ship_len > s.num_ships:
+
+        if s.num_ships is None:
             return
 
-        length = s.placing_ship_len
+        board = self._board_for_player(player)
+        ships_list = self._ships_list_for_player(player)
+
+        # If clicking an occupied cell: remove that whole ship
+        if board[row][col] == 1:
+            for i, ship in enumerate(ships_list):
+                if (row, col) in ship:
+                    # clear cells from board
+                    for rr, cc in ship:
+                        board[rr][cc] = 0
+                    # remove from ships list
+                    ships_list.pop(i)
+                    self.refresh_ui()
+                    return
+
+        # Otherwise place the next required length ship
+        length = self._next_required_length(player)
+        if length > s.num_ships:
+            return  # all ships already placed
+
         orient = s.placing_orientation
-        board = s.p1_board if player == 1 else s.p2_board
 
         if not self.can_place(board, row, col, length, orient):
             messagebox.showerror("Invalid placement", "That ship doesn't fit there or overlaps another ship.")
             return
-        
+
         coords = self.place_ship(board, row, col, length, orient)
+        ships_list.append(coords)
 
-        if player == 1:
-            s.p1_ships.append(coords)
-        else:
-            s.p2_ships.append(coords)
-
-        s.placing_ship_len += 1
         self.refresh_ui()
 
     def can_place(self, board, row, col, length, orient) -> bool:
@@ -222,8 +234,9 @@ class PlacementScreen(tk.Frame):
             return
 
         # must place all ships first
-        if s.placing_ship_len <= s.num_ships:
-            remaining = s.num_ships - (s.placing_ship_len - 1)
+        ships_list = self._ships_list_for_player(s.placing_player)
+        if len(ships_list) < s.num_ships:
+            remaining = s.num_ships - len(ships_list)
             messagebox.showinfo("Not ready", f"Place all ships first. Remaining: {remaining}")
             return
 
@@ -245,9 +258,10 @@ class PlacementScreen(tk.Frame):
             self.status_lbl.config(text="Placement")
             return
 
-        if s.placing_ship_len <= s.num_ships:
+        next_len = self._next_required_length(s.placing_player)
+        if next_len <= s.num_ships:
             self.status_lbl.config(
-                text=f"Placement — Player {s.placing_player}: ship {s.placing_ship_len}/{s.num_ships} (length {s.placing_ship_len})"
+                text=f"Placement — Player {s.placing_player}: place ship length {next_len}"
             )
         else:
             self.status_lbl.config(
@@ -283,9 +297,25 @@ class PlacementScreen(tk.Frame):
                     cells[r][c].bind("<Button-1>", cells[r][c]._click_handler)
                 else:
                     cells[r][c].unbind("<Button-1>")
+                    
+    def _ships_list_for_player(self, player: int):
+        s = self.app.state
+        return s.p1_ships if player == 1 else s.p2_ships
 
+    def _board_for_player(self, player: int):
+        s = self.app.state
+        return s.p1_board if player == 1 else s.p2_board
 
-from game.rules import fire_shot, UNKNOWN, MISS, HIT  # put this near top imports
+    def _next_required_length(self, player: int) -> int:
+        s = self.app.state
+        if s.num_ships is None:
+            return 1
+        placed_lengths = {len(ship) for ship in self._ships_list_for_player(player)}
+        for L in range(1, s.num_ships + 1):
+            if L not in placed_lengths:
+                return L
+        return s.num_ships + 1  # means "done"
+
 
 
 class BattleScreen(tk.Frame):
@@ -469,6 +499,8 @@ class BattleScreen(tk.Frame):
 
         self.result_lbl.config(text="")
         self.input_locked = False
+        self.cell_font = ("Arial", 16, "bold")   # normal
+        self.mark_font = ("Arial", 26, "bold")   # X / O only
         self.fire_btn.config(state="normal")
 
         self.refresh_ui()
