@@ -15,11 +15,15 @@ It also configures fullscreen behavior and provides a single place for screens t
 
 class App(tk.Tk):
     def __init__(self):
+        # Initialize the main Tkinter window
         super().__init__()
 
+        # Set window title
         self.title("Battleship")
         self.state = GameState()
 
+        # Create the shared game state
+        # All screeens read from and write to this object 
         self._container = tk.Frame(self)
         self._container.pack(fill="both", expand=True)
 
@@ -27,6 +31,8 @@ class App(tk.Tk):
         self._container.grid_rowconfigure(0, weight=1)
         self._container.grid_columnconfigure(0, weight=1)
 
+        # Dictionary to store screen instances
+        # Key = screen class name, Value = screen object
         self.screens = {}
         for Screen in (WelcomeScreen, PlacementScreen, BattleScreen):
             self._add_screen(Screen)
@@ -40,9 +46,13 @@ class App(tk.Tk):
         self.bind("<Escape>", lambda e: self.attributes("-fullscreen", False))
 
     def _add_screen(self, ScreenClass):
+        """
+        Create a screen instance and add it to the container.
+        Screens are stacked using grid and raised when needed.
+        """
         screen = ScreenClass(parent=self._container, app=self)
-        self.screens[ScreenClass.__name__] = screen
-        screen.grid(row=0, column=0, sticky="nsew")
+        self.screens[ScreenClass.__name__] = screen  # Store the screen using its class name
+        screen.grid(row=0, column=0, sticky="nsew") # Place the screen in the container
 
     def show_screen(self, name: str):
         self.screens[name].tkraise()
