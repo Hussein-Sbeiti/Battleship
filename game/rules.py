@@ -2,7 +2,13 @@
 # Battleship Project - Core battle rules (shots, hit/miss)
 # Created: 2026-02-07
 
-# game/rules.py
+'''
+This file contains the core Battleship rules, completely independent of the UI. 
+The fire_shot() function determines whether a shot is a hit, miss, sink, or already-fired location, 
+and updates both the attacker’s shot board and the defender’s incoming board. 
+It also tracks hits using a set so ship destruction can be detected efficiently. 
+The ships_remaining() function counts how many ships are still afloat and is used to determine when the game is over.
+'''
 from typing import List, Tuple, Set
 
 UNKNOWN = 0

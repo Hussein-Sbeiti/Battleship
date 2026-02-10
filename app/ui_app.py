@@ -6,6 +6,12 @@ import tkinter as tk
 from app.app_models import GameState
 from app.ui_screen import WelcomeScreen, PlacementScreen, BattleScreen
 
+'''
+This file defines the main Tkinter application class, App, which acts as the screen manager. 
+It creates the root window, initializes the shared GameState, and loads all screens (WelcomeScreen, PlacementScreen, and BattleScreen) 
+into a single container frame. The app controls which screen is visible using tkraise(), allowing smooth screen transitions without destroying widgets. 
+It also configures fullscreen behavior and provides a single place for screens to access shared state.
+'''
 
 class App(tk.Tk):
     def __init__(self):

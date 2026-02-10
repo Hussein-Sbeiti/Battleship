@@ -4,6 +4,14 @@
 # This file contains NO UI code and NO game rules.
 # Created: 2026-02-06
 
+'''
+This file defines the central game state using a dataclass called GameState. 
+It stores everything needed to describe the current game at any moment: 
+ship placement info, both players’ boards, shot tracking, ship coordinate lists, hit tracking, and turn management.
+There is no UI code and no rules logic here, by design — this makes the state reusable and easy to reason about. 
+The reset_for_new_game() method cleanly reinitializes all fields so a fresh game can start without restarting the app.
+'''
+
 from dataclasses import dataclass, field
 from typing import Optional, List, Tuple, Set
 

@@ -2,7 +2,13 @@
 # Battleship Project - Board data + placement validation
 # Created: 2026-02-06
 
-# game/game_board.py
+'''
+This file defines a lightweight Board class that represents a 10×10 grid and provides helper methods for ship placement. 
+It knows how to check whether a ship can be placed (can_place), how to place it (place), 
+and how to compute which cells a ship would occupy based on position, length, and orientation. 
+The board itself does not know about players, turns, or hits — it strictly manages grid validity. 
+This separation keeps placement logic clean and reusable.
+'''
 from dataclasses import dataclass, field
 from typing import List, Tuple
 

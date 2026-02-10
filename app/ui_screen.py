@@ -2,6 +2,19 @@
 # Battleship Project - UI screens
 # Created: 2026-02-06
 
+'''
+This is the largest and most important UI file, containing all three game screens and nearly all player interaction.
+
+WelcomeScreen lets the user choose how many ships to play with and initializes the game state accordingly.
+
+PlacementScreen handles ship placement for both players, enforcing turn order, ship sizes, orientation toggling, overlap rules, and allowing ships to be removed by clicking them again.
+
+BattleScreen manages the actual gameplay: selecting targets, firing shots, displaying hits/misses/sinks, switching turns with a delay, updating the scoreboard, and detecting win conditions.
+
+This file focuses on UI behavior and flow, while delegating rule enforcement (hits, sinks, remaining ships) to the game.rules module
+
+'''
+
 import tkinter as tk
 from tkinter import ttk, messagebox
 from game.rules import fire_shot, ships_remaining, UNKNOWN, MISS, HIT

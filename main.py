@@ -15,6 +15,14 @@ Battleship/
     coords.py       
 '''
 
+'''
+This file is the entry point of the Battleship application. 
+Its only responsibility is to create an instance of the App class and start Tkinter’s event loop using mainloop(), 
+which keeps the window running and responsive. 
+It intentionally contains no UI layout, no game logic, and no state handling, keeping startup logic clean and isolated. 
+The if __name__ == "__main__" guard ensures the app only launches when this file is run directly, not when imported elsewhere.
+'''
+
 # main.py
 # Battleship Project - Program entry point
 #
