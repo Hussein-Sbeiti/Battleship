@@ -3,6 +3,7 @@ Battleship/
   main.py
   app/
     __init__.py
+    app_models.py
     ui_app.py
     ui_screen.py
     models.py
@@ -25,7 +26,6 @@ The if __name__ == "__main__" guard ensures the app only launches when this file
 
 # main.py
 # Battleship Project - Program entry point
-#
 # This file is responsible only for starting the application.
 # It should not contain any UI layout or game logic.
 #

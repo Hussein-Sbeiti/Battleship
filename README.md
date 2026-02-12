@@ -126,12 +126,12 @@ Requirements:
 These items are planned to fully match the project requirements and polish the game:
 	•	Add row/column labels (A–J, 1–10) to grids
 	•	Display per-ship hit counters (e.g. 2/3 hits)
+	• 	Add delays in between actions x
 	•	Add a dedicated Win Screen with:
 	•	Play Again
 	•	Exit
 	•	Optional: sound effects for hit/miss/sink
 	•	Optional: keyboard input for firing (e.g. “B7”)
-	•	UI polish and animations
 	•	Code cleanup & documentation pass
 
 ⸻

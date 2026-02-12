@@ -469,7 +469,7 @@ class BattleScreen(tk.Frame):
         # Show result big
         self.result_lbl.config(text=result.upper())
         
-        # ✅ Win check (after a valid shot)
+        # Win check (after a valid shot)
         if turn == 1:
             defender_ships = s.p2_ships
             defender_hits = s.p2_hits
