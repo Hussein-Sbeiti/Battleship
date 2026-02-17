@@ -124,8 +124,8 @@ Requirements:
 🔧 TODO / Remaining Improvements
 
 These items are planned to fully match the project requirements and polish the game:
-	•	Add row/column labels (A–J, 1–10) to grids
-	•	Display per-ship hit counters (e.g. 2/3 hits)
+	•	Add row/column labels (A–J, 1–10) to grids (DONE)
+	•	Display per-ship hit counters (e.g. 2/3 hits) (DONE)
 	• 	Add delays in between actions x
 	•	Add a dedicated Win Screen with:
 	•	Play Again
@@ -135,28 +135,3 @@ These items are planned to fully match the project requirements and polish the g
 	•	Code cleanup & documentation pass
 
 ⸻
-
-📌 Notes
-
-This project was built incrementally with a strong focus on:
-	•	Readability
-	•	Logical game flow
-	•	Separation of UI and game logic
-
-Future improvements can be added without major refactoring.
-
-⸻
-
----
-
-## Next step
-After this:
-1. Save the README
-2. Commit and push
-3. Add more comments
-
-```bash
-git add README.md
-git commit -m "Update README with current features and remaining TODOs"
-git push
-

@@ -87,3 +87,20 @@ def ships_remaining(defender_ships: List[List[Coord]], defender_hits: Set[Coord]
             remaining += 1
 
     return remaining
+
+def ship_hit_counters(ships_list, hits_set):
+    """
+    Returns a list like ["2/3", "0/4", ...] in the same order as ships_list.
+    Each entry is: hits_on_that_ship / ship_length
+    """
+    counters = []
+    for ship in ships_list:
+        hit_count = sum(1 for cell in ship if cell in hits_set)
+        counters.append(f"{hit_count}/{len(ship)}")
+    return counters
+
+def ship_hit_counters_sorted(ships_list, hits_set):
+    ships_sorted = sorted(ships_list, key=len)
+    return ship_hit_counters(ships_sorted, hits_set)
+
+

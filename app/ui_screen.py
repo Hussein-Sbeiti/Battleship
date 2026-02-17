@@ -17,7 +17,7 @@ This file focuses on UI behavior and flow, while delegating rule enforcement (hi
 
 import tkinter as tk
 from tkinter import ttk, messagebox
-from game.rules import fire_shot, ships_remaining, UNKNOWN, MISS, HIT
+from game.rules import fire_shot, ships_remaining, ship_hit_counters, UNKNOWN, MISS, HIT
 from game.coords import col_to_letter, row_to_number
 
 
@@ -371,16 +371,25 @@ class BattleScreen(tk.Frame):
         self.input_locked = False   # lock input during result delay
 
         root = tk.Frame(self)
-        root.pack(fill="both", expand=True, padx=30, pady=20)
+        root.pack(fill="x", expand=True)
+        self.after(50, lambda: self.score_lbl.config(wraplength=self.winfo_width() - 80))
 
         header = tk.Frame(root)
-        header.pack(fill="x", pady=(0, 12))
+        header.pack(fill="x", expand=True)
 
-        self.turn_lbl = tk.Label(header, text="", font=("Arial", 22, "bold"))
-        self.turn_lbl.pack()
+        self.turn_lbl = tk.Label(header, text="", font=("Arial", 22, "bold"), anchor="center")
+        self.turn_lbl.pack(fill="x")
 
-        self.result_lbl = tk.Label(header, text="", font=("Arial", 32, "bold"))
-        self.result_lbl.pack(pady=(6, 0))
+
+        self.result_lbl = tk.Label(
+            header,
+            text="",
+            font=("Arial", 32, "bold"),
+            anchor="center",
+        )
+        self.result_lbl.pack(fill="x", expand=True, pady=(10, 10))
+
+
 
         controls = tk.Frame(root)
         controls.pack(fill="x", pady=(0, 12))
@@ -421,8 +430,16 @@ class BattleScreen(tk.Frame):
         self._make_grid(self.target_grid, self.target_cells, clickable=True)
 
         # Scoreboard
-        self.score_lbl = tk.Label(root, text="", font=("Arial", 18, "bold"))
-        self.score_lbl.pack(pady=(14, 0))
+        self.score_lbl = tk.Label(
+            root,
+            text="",
+            font=("Arial", 16, "bold"),
+            justify="center",
+            anchor="center",
+        )
+        self.score_lbl.pack(pady=(14, 0), fill="x")
+
+
 
     def tkraise(self, aboveThis=None):
         self.refresh_ui()
@@ -451,8 +468,8 @@ class BattleScreen(tk.Frame):
                 cell = tk.Label(
                     frame,
                     text="",
-                    width=6,
-                    height=3,
+                    width=5,
+                    height=2,
                     bg=ACTIVE_BG,
                     relief="solid",
                     borderwidth=1,
@@ -587,13 +604,28 @@ class BattleScreen(tk.Frame):
         # Render target board (opponent hidden except my shots)
         self._render_target_board(self.target_cells, my_shots)
 
+        p1_ship_counters = ship_hit_counters(s.p1_ships, s.p1_hits)
+        p2_ship_counters = ship_hit_counters(s.p2_ships, s.p2_hits)
+
+        p1_ship_line = ", ".join(p1_ship_counters) if p1_ship_counters else "-"
+        p2_ship_line = ", ".join(p2_ship_counters) if p2_ship_counters else "-"
+
+
         # Scoreboard (both players)
         self.score_lbl.config(
             text=(
-                f"P1 → Shots: {p1_stats['shots']} | Hits: {p1_stats['hits']} | Misses: {p1_stats['misses']} | Ships: {p1_stats['ships']}\n"
-                f"P2 → Shots: {p2_stats['shots']} | Hits: {p2_stats['hits']} | Misses: {p2_stats['misses']} | Ships: {p2_stats['ships']}"
+                f"P1 → Shots: {p1_stats['shots']} | Hits: {p1_stats['hits']} | "
+                f"Misses: {p1_stats['misses']} | Ships: {p1_stats['ships']} | "
+                f"Ship hits: {p1_ship_line}\n"
+                f"P2 → Shots: {p2_stats['shots']} | Hits: {p2_stats['hits']} | "
+                f"Misses: {p2_stats['misses']} | Ships: {p2_stats['ships']} | "
+                f"Ship hits: {p2_ship_line}"
             )
         )
+
+        
+
+
 
         # Highlight selected cell on target board if valid
         if self.selected is not None:
