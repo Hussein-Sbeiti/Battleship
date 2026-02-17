@@ -18,6 +18,8 @@ This file focuses on UI behavior and flow, while delegating rule enforcement (hi
 import tkinter as tk
 from tkinter import ttk, messagebox
 from game.rules import fire_shot, ships_remaining, UNKNOWN, MISS, HIT
+from game.coords import col_to_letter, row_to_number
+
 
 MIN_SHIPS = 1
 MAX_SHIPS = 5
@@ -81,7 +83,6 @@ class WelcomeScreen(tk.Frame):
             messagebox.showerror("Invalid", "Pick a number from 1 to 5.")
             return
 
-        self.app.state.num_ships = n
         self.app.state.reset_for_new_game()
         self.app.state.num_ships = n
         self.app.show_screen("PlacementScreen")
@@ -145,23 +146,41 @@ class PlacementScreen(tk.Frame):
         super().tkraise(aboveThis)
 
     def _make_grid(self, player: int):
+
         frame = self.p1_grid if player == 1 else self.p2_grid
         cells = self.p1_buttons if player == 1 else self.p2_buttons
 
+        # Top-left empty corner
+        tk.Label(frame, text="", width=4).grid(row=0, column=0)
+
+        # Column headers A–J
+        for c in range(GRID_SIZE):
+            tk.Label(
+                frame,
+                text=col_to_letter(c),
+                font=("Arial", 12, "bold")
+            ).grid(row=0, column=c + 1)
+
+        # Row headers + cells
         for r in range(GRID_SIZE):
+            tk.Label(
+                frame,
+                text=row_to_number(r),
+                font=("Arial", 12, "bold")
+            ).grid(row=r + 1, column=0)
+
             for c in range(GRID_SIZE):
                 cell = tk.Label(
                     frame,
                     text="",
-                    width=6,          # cell width
-                    height=3,         # cell height
+                    width=6,
+                    height=3,
                     bg=ACTIVE_BG,
                     relief="solid",
                     borderwidth=1,
                 )
-                cell.grid(row=r, column=c, padx=1, pady=1)
+                cell.grid(row=r + 1, column=c + 1, padx=1, pady=1)
 
-                # click handler (stored so we can enable/disable later)
                 def handler(event, rr=r, cc=c, pp=player):
                     self.on_cell_click(pp, rr, cc)
 
@@ -169,6 +188,8 @@ class PlacementScreen(tk.Frame):
                 cell.bind("<Button-1>", cell._click_handler)
 
                 cells[r][c] = cell
+
+
 
     def toggle_orientation(self):
         s = self.app.state
@@ -408,7 +429,24 @@ class BattleScreen(tk.Frame):
         super().tkraise(aboveThis)
 
     def _make_grid(self, frame, cells, clickable: bool):
+
+        tk.Label(frame, text="", width=4).grid(row=0, column=0)
+
+        # Column headers
+        for c in range(GRID_SIZE):
+            tk.Label(
+                frame,
+                text=col_to_letter(c),
+                font=("Arial", 12, "bold")
+            ).grid(row=0, column=c + 1)
+
         for r in range(GRID_SIZE):
+            tk.Label(
+                frame,
+                text=row_to_number(r),
+                font=("Arial", 12, "bold")
+            ).grid(row=r + 1, column=0)
+
             for c in range(GRID_SIZE):
                 cell = tk.Label(
                     frame,
@@ -420,7 +458,7 @@ class BattleScreen(tk.Frame):
                     borderwidth=1,
                     font=("Arial", 16, "bold"),
                 )
-                cell.grid(row=r, column=c, padx=1, pady=1)
+                cell.grid(row=r + 1, column=c + 1, padx=1, pady=1)
 
                 if clickable:
                     def handler(event, rr=r, cc=c):
