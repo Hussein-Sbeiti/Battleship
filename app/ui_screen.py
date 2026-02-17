@@ -145,6 +145,7 @@ class PlacementScreen(tk.Frame):
         self.refresh_ui()
         super().tkraise(aboveThis)
 
+
     def _make_grid(self, player: int):
 
         frame = self.p1_grid if player == 1 else self.p2_grid
@@ -440,10 +441,16 @@ class BattleScreen(tk.Frame):
         self.score_lbl.pack(pady=(14, 0), fill="x")
 
 
-
     def tkraise(self, aboveThis=None):
+        # reset per-game UI state when entering BattleScreen
+        self.selected = None
+        self.input_locked = False
+        self.result_lbl.config(text="")
+        self.fire_btn.config(state="normal")
+
         self.refresh_ui()
         super().tkraise(aboveThis)
+
 
     def _make_grid(self, frame, cells, clickable: bool):
 
@@ -503,63 +510,65 @@ class BattleScreen(tk.Frame):
         row, col = self.selected
         turn = s.current_turn
 
-        # Pick boards by attacker turn
+        # Determine attacker/defender boards
         if turn == 1:
             attacker_shots = s.p1_shots
             defender_incoming = s.p2_incoming
             defender_ships = s.p2_ships
             defender_hits = s.p2_hits
+            winner_num = 1
         else:
             attacker_shots = s.p2_shots
             defender_incoming = s.p1_incoming
             defender_ships = s.p1_ships
             defender_hits = s.p1_hits
+            winner_num = 2
 
-        result = fire_shot(attacker_shots, defender_incoming, defender_ships, defender_hits, row, col)
+        # Resolve shot using rules engine
+        result = fire_shot(
+            attacker_shots,
+            defender_incoming,
+            defender_ships,
+            defender_hits,
+            row,
+            col
+        )
 
+        # If already shot, don't proceed
         if result == "already":
             self.result_lbl.config(text="ALREADY SHOT")
             return
 
-        # Show result big
+        # Show result immediately
         self.result_lbl.config(text=result.upper())
-        
-        # Win check (after a valid shot)
-        if turn == 1:
-            defender_ships = s.p2_ships
-            defender_hits = s.p2_hits
-            winner = 1
-        else:
-            defender_ships = s.p1_ships
-            defender_hits = s.p1_hits
-            winner = 2
 
-        if ships_remaining(defender_ships, defender_hits) == 0:
-            self.result_lbl.config(text=f"PLAYER {winner} WINS!")
-            self.input_locked = True
-            self.fire_btn.config(state="disabled")
-
-            # restart back to welcome after short pause
-            def restart():
-                s.reset_for_new_game()
-                s.num_ships = None
-                self.app.show_screen("WelcomeScreen")
-
-            self.after(2500, restart)
-            return
-
-        # Lock input + disable fire during delay
-        self.input_locked = True
-        self.fire_btn.config(state="disabled")
-
-        # Clear selection so it doesn't carry over
+        # Clear selection
         self.selected = None
 
-        # Switch turns after delay
-        self.after(TURN_DELAY_MS, self._switch_turn)
-
-        # Refresh now so you see the shot marks immediately
+        # Refresh UI so marks appear immediately
         self.refresh_ui()
+
+        # Win check
+        if ships_remaining(defender_ships, defender_hits) == 0:
+            # lock input and show win text on battle screen first
+            self.input_locked = True
+            self.fire_btn.config(state="disabled")
+            self.result_lbl.config(text=f"PLAYER {winner_num} WINS!")
+
+            def go_to_win():
+                win_screen = self.app.screens["WinScreen"]
+                win_screen.set_winner(f"PLAYER {winner_num} WINS!")
+                win_screen.set_stats()  # (we add this next)
+                self.app.show_screen("WinScreen")
+
+            self._pending_after = self.after(1500, go_to_win)
+            return
+
+        # Lock input and switch turns after delay
+        self.input_locked = True
+        self.fire_btn.config(state="disabled")
+        self._pending_after = self.after(TURN_DELAY_MS, self._switch_turn)
+
 
     def _switch_turn(self):
         s = self.app.state
@@ -622,9 +631,6 @@ class BattleScreen(tk.Frame):
                 f"Ship hits: {p2_ship_line}"
             )
         )
-
-        
-
 
 
         # Highlight selected cell on target board if valid
@@ -691,3 +697,70 @@ class BattleScreen(tk.Frame):
         shots = hits + misses
         ships_left = ships_remaining(ships_list, hits_set)
         return {"shots": shots, "hits": hits, "misses": misses, "ships": ships_left}
+    
+
+class WinScreen(tk.Frame):
+    def __init__(self, parent, app):
+        super().__init__(parent)
+        self.app = app
+
+        self.title_lbl = tk.Label(self, text="Game Over", font=("Arial", 24, "bold"))
+        self.title_lbl.pack(pady=20)
+
+        self.winner_lbl = tk.Label(self, text="", font=("Arial", 18))
+        self.winner_lbl.pack(pady=10)
+
+        self.stats_lbl = tk.Label(self, text="", font=("Arial", 14), justify="left")
+        self.stats_lbl.pack(pady=10)
+
+
+        btn_row = tk.Frame(self)
+        btn_row.pack(pady=25)
+
+        play_btn = tk.Button(btn_row, text="Play Again", width=18, command=self.play_again)
+        play_btn.grid(row=0, column=0, padx=10)
+
+        exit_btn = tk.Button(btn_row, text="Exit", width=18, command=self.exit_game)
+        exit_btn.grid(row=0, column=1, padx=10)
+
+    def set_winner(self, winner_text: str):
+        self.winner_lbl.config(text=winner_text)
+
+    def play_again(self):
+        # Reset your game state and go back to placement
+        # (We’ll hook this to existing reset/new-game function in Step 3.)
+        self.app.new_game()
+
+    def exit_game(self):
+        self.app.destroy()
+
+    def set_stats(self):
+        s = self.app.state
+
+        def counts(shots_board):
+            hits = sum(1 for r in range(GRID_SIZE) for c in range(GRID_SIZE) if shots_board[r][c] == HIT)
+            misses = sum(1 for r in range(GRID_SIZE) for c in range(GRID_SIZE) if shots_board[r][c] == MISS)
+            shots = hits + misses
+            acc = (hits / shots * 100) if shots > 0 else 0.0
+            return shots, hits, misses, acc
+
+        p1_shots, p1_hits, p1_misses, p1_acc = counts(s.p1_shots)
+        p2_shots, p2_hits, p2_misses, p2_acc = counts(s.p2_shots)
+
+        p1_ships_left = ships_remaining(s.p1_ships, s.p1_hits)
+        p2_ships_left = ships_remaining(s.p2_ships, s.p2_hits)
+
+        p1_ship_line = ", ".join(ship_hit_counters(s.p1_ships, s.p1_hits)) or "-"
+        p2_ship_line = ", ".join(ship_hit_counters(s.p2_ships, s.p2_hits)) or "-"
+
+        text = (
+            f"Player 1 Stats\n"
+            f"Shots: {p1_shots} | Hits: {p1_hits} | Misses: {p1_misses} | Accuracy: {p1_acc:.1f}% | Ships left: {p1_ships_left}\n"
+            f"Ship hits: {p1_ship_line}\n\n"
+            f"Player 2 Stats\n"
+            f"Shots: {p2_shots} | Hits: {p2_hits} | Misses: {p2_misses} | Accuracy: {p2_acc:.1f}% | Ships left: {p2_ships_left}\n"
+            f"Ship hits: {p2_ship_line}"
+        )
+
+        self.stats_lbl.config(text=text)
+
