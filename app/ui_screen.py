@@ -308,7 +308,7 @@ class PlacementScreen(tk.Frame):  # Screen 2: both players place ships before ba
         self.orient_btn.config(state="disabled")  # Prevent orientation toggling during delay
 
         # Hide both placement boards immediately so neither player can see the other's ships
-        # (cover with dark background and disable interactions). This is important for
+        # (cover with dark background and disable interactions). This is for
         # local single-screen play so Player 1 cannot see Player 2's board after placement.
         self._render_board(self.p1_buttons, s.p1_board, show_ships=False,
                    ship_color=P1_SHIP_BG, covered=True)
@@ -321,7 +321,7 @@ class PlacementScreen(tk.Frame):  # Screen 2: both players place ships before ba
 
         self.after(3000, lambda: self.app.show_screen("BattleScreen"))  # Wait 3 seconds, then switch
         return  # IMPORTANT: stop function here
-
+    
 
     def refresh_ui(self):
         s = self.app.state
