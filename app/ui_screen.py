@@ -323,7 +323,6 @@ class PlacementScreen(tk.Frame):  # Screen 2: both players place ships before ba
         return  # IMPORTANT: stop function here
 
 
-
     def refresh_ui(self):
         s = self.app.state
 
