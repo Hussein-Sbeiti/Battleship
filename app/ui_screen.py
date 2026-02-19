@@ -853,4 +853,3 @@ class WinScreen(tk.Frame):  # Final screen: show winner + stats + play again / e
         )
 
         self.stats_lbl.config(text=text)  # Display stats text on the screen
-
