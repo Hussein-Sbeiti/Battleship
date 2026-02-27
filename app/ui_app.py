@@ -8,7 +8,6 @@ from app.app_models import GameState  # Shared game state object
 from app.ui_screen import WelcomeScreen, PlacementScreen, BattleScreen, WinScreen  # All screen classes
 from PIL import Image, ImageTk  # Pillow library for image handling (if needed for UI)
 from pathlib import Path  # For file path handling
-import os  # For file system operations
 
 
 '''
@@ -108,8 +107,19 @@ class App(tk.Tk):  # Main application window inherits from Tk
             messagebox.showerror("Wallpaper Error", f"Could not load that image.\n\n{e}")
 
     def set_wallpaper(self, path: str):
-        """Load wallpaper from a path (absolute or relative) and render it behind all screens."""
-        img = Image.open(path)
+        """Load wallpaper from a path.
+
+        - Absolute paths (from the file picker) work as-is.
+        - Relative paths (repo assets like 'assets/..') resolve from the project root.
+        """
+        p = Path(path)
+
+        # If a relative path is provided, resolve it from the project root (Battleship/)
+        if not p.is_absolute():
+            project_root = Path(__file__).resolve().parents[1]  # .../Battleship/
+            p = project_root / p
+
+        img = Image.open(p)
         self._bg_original = img
         self._render_wallpaper()
 
@@ -142,4 +152,3 @@ class App(tk.Tk):  # Main application window inherits from Tk
         self._bg_label.config(image=self._bg_photo)
         self._bg_label.lower()         # keep it behind
         self._container.lift()         # keep screens above
-
