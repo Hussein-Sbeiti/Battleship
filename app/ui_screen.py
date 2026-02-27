@@ -507,6 +507,12 @@ class BattleScreen(tk.Frame):
         )
         self.score_lbl.pack(pady=(14, 0), fill="x")  # Place scoreboard under boards
 
+        # --- Shot blackout (used after a valid shot to briefly cover BOTH boards for hand-off) ---
+        # Implemented by temporarily rendering both grids with COVER_BG (same idea as PlacementScreen).
+        self._shot_blackout_active = False
+        self._shot_blackout_job = None
+        self._shot_blackout_hide_job = None
+
 
     def tkraise(self, aboveThis=None):
         # Reset per-game / per-entry UI state when this screen is shown
@@ -514,6 +520,8 @@ class BattleScreen(tk.Frame):
         self.input_locked = False  # Allow input again
         self.result_lbl.config(text="")  # Clear result text
         self.fire_btn.config(state="normal")  # Re-enable FIRE button
+        self._cancel_shot_blackout()
+        self._end_shot_blackout()
 
         self.refresh_ui()  # Re-render boards + scoreboard based on current GameState
         super().tkraise(aboveThis)  # Bring this screen to the front
@@ -614,6 +622,8 @@ class BattleScreen(tk.Frame):
 
         self.selected = None  # Clear current target selection
         self.refresh_ui()  # Repaint boards so shot mark appears immediately
+        # 1.5s after a valid shot, briefly black out the screen for hand-off
+        self._schedule_shot_blackout(1500, 1500)
 
         # Check win condition: if defender has 0 ships remaining, attacker wins
         if ships_remaining(defender_ships, defender_hits) == 0:
@@ -634,6 +644,56 @@ class BattleScreen(tk.Frame):
         self.input_locked = True  # Lock input during delay
         self.fire_btn.config(state="disabled")  # Disable FIRE button during delay
         self._pending_after = self.after(TURN_DELAY_MS, self._switch_turn)  # Schedule turn swap
+
+    def _schedule_shot_blackout(self, delay_ms: int = 1500, duration_ms: int = 1500):
+        """Wait `delay_ms` after a valid shot, then cover BOTH boards for `duration_ms`."""
+        self._cancel_shot_blackout()
+        self._shot_blackout_job = self.after(delay_ms, lambda: self._start_shot_blackout(duration_ms))
+
+    def _cancel_shot_blackout(self):
+        if self._shot_blackout_job is not None:
+            try:
+                self.after_cancel(self._shot_blackout_job)
+            except Exception:
+                pass
+            self._shot_blackout_job = None
+
+        if self._shot_blackout_hide_job is not None:
+            try:
+                self.after_cancel(self._shot_blackout_hide_job)
+            except Exception:
+                pass
+            self._shot_blackout_hide_job = None
+
+    def _start_shot_blackout(self, duration_ms: int = 1500):
+        """Cover both boards (own + target) using COVER_BG for local hand-off."""
+        if self._shot_blackout_active:
+            return
+
+        self._shot_blackout_active = True
+        self._render_blackout_boards()
+
+        # End blackout after duration
+        self._shot_blackout_hide_job = self.after(duration_ms, self._end_shot_blackout)
+
+    def _end_shot_blackout(self):
+        """End board blackout and re-render normal UI."""
+        self._shot_blackout_active = False
+        self._shot_blackout_hide_job = None
+        self.refresh_ui()
+
+    def _render_blackout_boards(self):
+        """Render both grids as covered (no marks, no selection, no clicks)."""
+        # Cover own grid
+        for r in range(GRID_SIZE):
+            for c in range(GRID_SIZE):
+                self.own_cells[r][c].config(bg=COVER_BG, fg="black", text="")
+
+        # Cover target grid and disable selection clicks
+        for r in range(GRID_SIZE):
+            for c in range(GRID_SIZE):
+                self.target_cells[r][c].config(bg=COVER_BG, fg="black", text="")
+                self.target_cells[r][c].unbind("<Button-1>")
 
     def _switch_turn(self):
         s = self.app.state  # Shortcut to shared GameState
@@ -656,6 +716,10 @@ class BattleScreen(tk.Frame):
         s = self.app.state  # Shared GameState
         turn = s.current_turn  # Current player turn (1 or 2)
         self.turn_lbl.config(text=f"Player {turn}'s turn")  # Update top label
+        # If we're in the post-shot blackout window, cover both boards and stop.
+        if self._shot_blackout_active:
+            self._render_blackout_boards()
+            return
 
         # Choose what the current player sees, based on whose turn it is
         if turn == 1:

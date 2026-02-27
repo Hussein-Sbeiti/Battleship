@@ -67,7 +67,7 @@ class App(tk.Tk):  # Main application window inherits from Tk
         self.config(menu=menubar)
 
         # Try to load a default wallpaper if it exists in the project root
-        default_wallpaper = "assets/premium_photo-1733259743341-660c23023ddc.avif"
+        default_wallpaper = "assets/HD-wallpaper-battleship-oceans-clouds-sea.jpg"
         try:
             self.set_wallpaper(default_wallpaper)
         except Exception:
