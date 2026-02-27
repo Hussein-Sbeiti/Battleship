@@ -3,7 +3,7 @@
 # Created: 2026-02-06
 
 import tkinter as tk  # Tkinter GUI framework
-from tkinter import filedialog, messagebox  # File picker + simple alerts
+from tkinter import filedialog, messagebox, ttk  # File picker + simple alerts
 from app.app_models import GameState  # Shared game state object
 from app.ui_screen import WelcomeScreen, PlacementScreen, BattleScreen, WinScreen  # All screen classes
 from PIL import Image, ImageTk  # Pillow library for image handling (if needed for UI)
@@ -22,6 +22,11 @@ class App(tk.Tk):  # Main application window inherits from Tk
         super().__init__()  # Initialize Tk base class
         self.title("Battleship")  # Set window title
         self.state = GameState()  # Create shared game state object
+
+        # Make text larger across the app by default.
+        self.option_add("*Font", ("Arial", 16))
+        style = ttk.Style(self)
+        style.configure("TCombobox", font=("Arial", 16))
 
         # --- Wallpaper / background setup ---
         self._bg_original = None      # PIL.Image (original)
@@ -62,7 +67,7 @@ class App(tk.Tk):  # Main application window inherits from Tk
         self.config(menu=menubar)
 
         # Try to load a default wallpaper if it exists in the project root
-        default_wallpaper = "assets/HD-wallpaper-battleship-oceans-clouds-sea.jpg"
+        default_wallpaper = "assets/premium_photo-1733259743341-660c23023ddc.avif"
         try:
             self.set_wallpaper(default_wallpaper)
         except Exception:
@@ -152,3 +157,7 @@ class App(tk.Tk):  # Main application window inherits from Tk
         self._bg_label.config(image=self._bg_photo)
         self._bg_label.lower()         # keep it behind
         self._container.lift()         # keep screens above
+
+        welcome = self.screens.get("WelcomeScreen")
+        if welcome and hasattr(welcome, "refresh_wallpaper"):
+            welcome.refresh_wallpaper()

@@ -43,20 +43,21 @@ class WelcomeScreen(tk.Frame):  # Screen 1: pick number of ships, then move to p
         super().__init__(parent)  # Initialize Tkinter Frame base class
         self.app = app  # Store reference to the main App (lets us access state + screen switching)
 
-        outer = tk.Frame(self)  # Outer wrapper frame (used for centering)
-        outer.pack(fill="both", expand=True)  # Fill the screen
+        self.bg_label = tk.Label(self, bd=0)
+        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        self.refresh_wallpaper()
 
-        inner = tk.Frame(outer)  # Inner frame holding the actual widgets
+        inner = tk.Frame(self)  # Inner frame holding the actual widgets
         inner.place(relx=0.5, rely=0.45, anchor="center")  # Center-ish placement on screen
 
-        tk.Label(inner, text="Battleship", font=("Arial", 50, "bold")).pack(pady=(0, 18))  # Big title
-        tk.Label(inner, text="Choose how many ships you want (1–5)", font=("Arial", 12)).pack(pady=(0, 12))  # Subtitle
+        tk.Label(inner, text="Battleship", font=("Arial", 62, "bold")).pack(pady=(0, 18))  # Big title
+        tk.Label(inner, text="Choose how many ships you want (1–5)", font=("Arial", 18)).pack(pady=(0, 12))  # Subtitle
 
         self.choice_var = tk.IntVar(value=MIN_SHIPS)  # Stores the selected number of ships (default = 1)
 
         row = tk.Frame(inner)  # Row container for label + dropdown
         row.pack(pady=(0, 12))  # Add spacing under it
-        tk.Label(row, text="Ships:", font=("Arial", 12)).pack(side="left", padx=8)  # Label next to dropdown
+        tk.Label(row, text="Ships:", font=("Arial", 18)).pack(side="left", padx=8)  # Label next to dropdown
 
         ttk.Combobox(  # Dropdown for ship count selection
             row,
@@ -70,12 +71,22 @@ class WelcomeScreen(tk.Frame):  # Screen 1: pick number of ships, then move to p
         tk.Label(  # Small explanation text about ship sizes
             inner,
             text="Ship sizes are based on this number.\nExample: 3 ships means 1x1, 1x2, 1x3.",
-            font=("Arial", 10),
+            font=("Arial", 14),
             fg="#444",  # Gray text color
             justify="center",  # Center align multi-line text
         ).pack(pady=(0, 18))  # Add spacing below text
 
-        tk.Button(inner, text="Continue →", width=18, command=self.on_continue).pack()  # Button that triggers on_continue()
+        tk.Button(inner, text="Continue →", width=18, font=("Arial", 16, "bold"), command=self.on_continue).pack()  # Button that triggers on_continue()
+
+    def tkraise(self, aboveThis=None):
+        self.refresh_wallpaper()
+        super().tkraise(aboveThis)
+
+    def refresh_wallpaper(self):
+        photo = getattr(self.app, "_bg_photo", None)
+        self.bg_label.config(image=photo if photo else "", bg="#0b1f33")
+        self.bg_label.image = photo
+        self.bg_label.lower()
 
     def on_continue(self):
         n = int(self.choice_var.get())  # Read selected ship count from dropdown variable
@@ -110,7 +121,7 @@ class PlacementScreen(tk.Frame):  # Screen 2: both players place ships before ba
         top = tk.Frame(root)  # Top bar container (status + buttons)
         top.pack(fill="x", pady=(0, 15))  # Stretch horizontally + spacing below
 
-        self.status_lbl = tk.Label(top, text="", font=("Arial", 16, "bold"))  # Shows placement instructions
+        self.status_lbl = tk.Label(top, text="", font=("Arial", 22, "bold"))  # Shows placement instructions
         self.status_lbl.pack(side="left")  # Align left
 
         self.orient_btn = tk.Button(  # Button to toggle horizontal/vertical placement
@@ -135,14 +146,14 @@ class PlacementScreen(tk.Frame):  # Screen 2: both players place ships before ba
         # Player 1 panel (left side)
         p1_panel = tk.Frame(boards)  # Left panel container
         p1_panel.pack(side="left", fill="both", expand=True, padx=(0, 25))  # Left with spacing to middle
-        tk.Label(p1_panel, text="Player 1", font=("Arial", 16, "bold")).pack(pady=(0, 10))  # Title label
+        tk.Label(p1_panel, text="Player 1", font=("Arial", 22, "bold")).pack(pady=(0, 10))  # Title label
         self.p1_grid = tk.Frame(p1_panel)  # Grid frame for Player 1 cells
         self.p1_grid.pack()  # Pack the grid frame
 
         # Player 2 panel (right side)
         p2_panel = tk.Frame(boards)  # Right panel container
         p2_panel.pack(side="left", fill="both", expand=True, padx=(25, 0))  # Right with spacing from middle
-        tk.Label(p2_panel, text="Player 2", font=("Arial", 16, "bold")).pack(pady=(0, 10))  # Title label
+        tk.Label(p2_panel, text="Player 2", font=("Arial", 22, "bold")).pack(pady=(0, 10))  # Title label
         self.p2_grid = tk.Frame(p2_panel)  # Grid frame for Player 2 cells
         self.p2_grid.pack()  # Pack the grid frame
 
@@ -172,7 +183,7 @@ class PlacementScreen(tk.Frame):  # Screen 2: both players place ships before ba
             tk.Label(
                 frame,
                 text=col_to_letter(c),  # Convert column index to letter
-                font=("Arial", 12, "bold")
+                font=("Arial", 16, "bold")
             ).grid(row=0, column=c + 1)
 
         # Row headers + actual grid cells
@@ -180,7 +191,7 @@ class PlacementScreen(tk.Frame):  # Screen 2: both players place ships before ba
             tk.Label(
                 frame,
                 text=row_to_number(r),  # Convert row index to 1–10
-                font=("Arial", 12, "bold")
+                font=("Arial", 16, "bold")
             ).grid(row=r + 1, column=0)
 
             for c in range(GRID_SIZE):
@@ -435,7 +446,7 @@ class BattleScreen(tk.Frame):
         self.turn_lbl = tk.Label(  # Shows "Player X's turn"
             header,
             text="",
-            font=("Arial", 22, "bold"),
+            font=("Arial", 28, "bold"),
             anchor="center",
         )
         self.turn_lbl.pack(fill="x")
@@ -443,7 +454,7 @@ class BattleScreen(tk.Frame):
         self.result_lbl = tk.Label(  # Big feedback text: HIT / MISS / SINK / WINS
             header,
             text="",
-            font=("Arial", 32, "bold"),
+            font=("Arial", 40, "bold"),
             anchor="center",
         )
         self.result_lbl.pack(fill="x", expand=True, pady=(10, 10))
@@ -454,7 +465,7 @@ class BattleScreen(tk.Frame):
         self.fire_btn = tk.Button(  # Confirm shot button
             controls,
             text="FIRE",
-            font=("Arial", 18, "bold"),
+            font=("Arial", 24, "bold"),
             width=10,
             command=self.on_fire_pressed,  # Fires the currently selected cell
         )
@@ -466,7 +477,7 @@ class BattleScreen(tk.Frame):
         # Left panel: Own board
         left = tk.Frame(boards)  # Container for own board
         left.pack(side="left", expand=True, padx=(0, 25))
-        self.left_title = tk.Label(left, text="Your Board", font=("Arial", 14, "bold"))  # Own board title
+        self.left_title = tk.Label(left, text="Your Board", font=("Arial", 20, "bold"))  # Own board title
         self.left_title.pack(pady=(0, 8))
         self.own_grid = tk.Frame(left)  # Frame that holds the own board grid
         self.own_grid.pack()
@@ -474,7 +485,7 @@ class BattleScreen(tk.Frame):
         # Right panel: Target board
         right = tk.Frame(boards)  # Container for opponent board
         right.pack(side="left", expand=True, padx=(25, 0))
-        self.right_title = tk.Label(right, text="Opponent Board", font=("Arial", 14, "bold"))  # Target title
+        self.right_title = tk.Label(right, text="Opponent Board", font=("Arial", 20, "bold"))  # Target title
         self.right_title.pack(pady=(0, 8))
         self.target_grid = tk.Frame(right)  # Frame holding target board grid
         self.target_grid.pack()
@@ -490,7 +501,7 @@ class BattleScreen(tk.Frame):
         self.score_lbl = tk.Label(
             root,
             text="",
-            font=("Arial", 16, "bold"),
+            font=("Arial", 20, "bold"),
             justify="center",
             anchor="center",
         )
@@ -516,7 +527,7 @@ class BattleScreen(tk.Frame):
             tk.Label(
                 frame,
                 text=col_to_letter(c),  # Convert column index to A–J
-                font=("Arial", 12, "bold")
+                font=("Arial", 16, "bold")
             ).grid(row=0, column=c + 1)  # +1 because col 0 is reserved for row labels
 
         # Row headers 1–10 + create grid cells
@@ -524,7 +535,7 @@ class BattleScreen(tk.Frame):
             tk.Label(
                 frame,
                 text=row_to_number(r),  # Convert row index to 1–10
-                font=("Arial", 12, "bold")
+                font=("Arial", 16, "bold")
             ).grid(row=r + 1, column=0)  # +1 because row 0 is reserved for column labels
 
             for c in range(GRID_SIZE):
@@ -536,7 +547,7 @@ class BattleScreen(tk.Frame):
                     bg=ACTIVE_BG,  # Default background
                     relief="solid",
                     borderwidth=1,
-                    font=("Arial", 16, "bold"),
+                    font=("Arial", 20, "bold"),
                 )
                 cell.grid(row=r + 1, column=c + 1, padx=1, pady=1)  # Place cell widget
 
@@ -779,13 +790,13 @@ class WinScreen(tk.Frame):  # Final screen: show winner + stats + play again / e
         super().__init__(parent)  # Initialize Frame base class
         self.app = app  # Reference to App (for new_game + destroy + state)
 
-        self.title_lbl = tk.Label(self, text="Game Over", font=("Arial", 24, "bold"))  # Big title label
+        self.title_lbl = tk.Label(self, text="Game Over", font=("Arial", 30, "bold"))  # Big title label
         self.title_lbl.pack(pady=20)  # Add vertical spacing
 
-        self.winner_lbl = tk.Label(self, text="", font=("Arial", 18))  # Winner text gets filled later
+        self.winner_lbl = tk.Label(self, text="", font=("Arial", 24))  # Winner text gets filled later
         self.winner_lbl.pack(pady=10)
 
-        self.stats_lbl = tk.Label(self, text="", font=("Arial", 14), justify="left")  # Stats block
+        self.stats_lbl = tk.Label(self, text="", font=("Arial", 18), justify="left")  # Stats block
         self.stats_lbl.pack(pady=10)
 
         btn_row = tk.Frame(self)  # Container holding both buttons
@@ -794,6 +805,7 @@ class WinScreen(tk.Frame):  # Final screen: show winner + stats + play again / e
         play_btn = tk.Button(  # Restart the game
             btn_row,
             text="Play Again",
+            font=("Arial", 16, "bold"),
             width=18,
             command=self.play_again,  # Calls play_again()
         )
@@ -802,6 +814,7 @@ class WinScreen(tk.Frame):  # Final screen: show winner + stats + play again / e
         exit_btn = tk.Button(  # Close the entire app
             btn_row,
             text="Exit",
+            font=("Arial", 16, "bold"),
             width=18,
             command=self.exit_game,  # Calls exit_game()
         )
